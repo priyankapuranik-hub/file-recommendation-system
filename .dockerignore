@@ -1,0 +1,10 @@
+node_modules
+.git
+.github
+clip-vit-large-patch14
+cache
+__pycache__
+*.pkl
+*.bin
+*.safetensors
+test*.py

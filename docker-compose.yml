@@ -1,0 +1,12 @@
+services:
+  file-recommendation:
+    image: ${IMAGE_NAME:-file-recommendation-system}:${APP_VERSION:-latest}
+    ports:
+      - "${HOST_PORT:-3000}:3000"
+    environment:
+      PORT: 3000
+      APP_VERSION: ${APP_VERSION:-local}
+      DATA_DIR: /app/data
+    volumes:
+      - ./sample-data:/app/data:ro
+    restart: unless-stopped

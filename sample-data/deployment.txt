@@ -1,0 +1,1 @@
+Deploy the container with Docker Compose. Monitor logs with docker compose logs and check the health endpoint.

@@ -1,0 +1,1 @@
+Continuous integration runs tests on every push. Continuous delivery builds a Docker image and publishes releases.
