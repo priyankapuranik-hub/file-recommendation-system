@@ -4,6 +4,7 @@ node_modules
 clip-vit-large-patch14
 cache
 __pycache__
+storage
 *.pkl
 *.bin
 *.safetensors

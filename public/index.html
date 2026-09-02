@@ -3,26 +3,89 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>File Recommendation System</title>
+  <title>FileFind — Smart File Discovery</title>
   <style>
-    body { font: 16px system-ui, sans-serif; max-width: 760px; margin: 3rem auto; padding: 0 1rem; color: #172033; }
-    form { display: flex; gap: .5rem; } input { flex: 1; padding: .7rem; } button { padding: .7rem 1rem; }
-    li { margin: .7rem 0; } .score { color: #53657d; }
+    :root { color-scheme: dark; --ink: #edf4ff; --muted: #9caec8; --panel: rgba(20, 31, 57, .74); --line: rgba(154, 180, 226, .2); --accent: #7c6cff; --cyan: #42d9d0; }
+    * { box-sizing: border-box; }
+    body { font: 16px/1.5 Inter, ui-sans-serif, system-ui, sans-serif; min-height: 100vh; margin: 0; color: var(--ink); background: radial-gradient(circle at 15% 10%, #263c70 0, transparent 35%), radial-gradient(circle at 90% 20%, #174c67 0, transparent 30%), #090f20; }
+    main { max-width: 980px; margin: auto; padding: 4rem 1.25rem; }
+    .hero { display: flex; align-items: flex-start; justify-content: space-between; gap: 2rem; margin-bottom: 2rem; }
+    .brand { display: flex; align-items: center; gap: .8rem; color: var(--cyan); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; font-size: .78rem; }
+    .logo { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 14px; color: white; background: linear-gradient(135deg, var(--accent), var(--cyan)); box-shadow: 0 8px 30px #42d9d04d; font-size: 1.35rem; }
+    h1 { max-width: 680px; margin: .8rem 0 .5rem; font-size: clamp(2.2rem, 6vw, 4.8rem); line-height: 1.02; letter-spacing: -.06em; }
+    .subtitle { max-width: 570px; margin: 0; color: var(--muted); font-size: 1.05rem; }
+    .badge { padding: .45rem .75rem; border: 1px solid var(--line); border-radius: 999px; color: #b7c6e2; background: #ffffff0d; font-size: .8rem; white-space: nowrap; }
+    form { display: flex; gap: .65rem; padding: .55rem; border: 1px solid var(--line); border-radius: 18px; background: #ffffff0c; box-shadow: 0 18px 60px #00000030; backdrop-filter: blur(18px); }
+    input { min-width: 0; flex: 1; padding: .9rem 1rem; border: 0; outline: 0; border-radius: 12px; color: var(--ink); background: #080e1d99; font-size: 1rem; }
+    input::placeholder { color: #7083a4; }
+    button { padding: .85rem 1.3rem; border: 0; border-radius: 12px; color: white; background: linear-gradient(135deg, var(--accent), #aa63e8); font-weight: 700; cursor: pointer; transition: transform .2s, box-shadow .2s; }
+    button:hover { transform: translateY(-2px); box-shadow: 0 8px 22px #7c6cff66; }
+    #results { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-top: 2rem; }
+    .card { position: relative; padding: 1.25rem; overflow: hidden; border: 1px solid var(--line); border-radius: 20px; background: var(--panel); box-shadow: 0 16px 40px #00000026; backdrop-filter: blur(16px); }
+    .card::after { position: absolute; top: -45px; right: -35px; width: 120px; height: 120px; border-radius: 50%; background: var(--cyan); opacity: .12; content: ""; }
+    .card h2 { position: relative; z-index: 1; margin: 0 0 .7rem; font-size: 1.12rem; overflow-wrap: anywhere; }
+    .path { margin-bottom: .8rem; color: var(--muted); font-size: .87rem; overflow-wrap: anywhere; }
+    .score { display: inline-block; padding: .28rem .55rem; border-radius: 999px; color: #9ff8ed; background: #42d9d01c; font-size: .8rem; }
+    .open { display: inline-flex; margin-top: 1.2rem; padding: .55rem .85rem; border: 1px solid #ffffff24; border-radius: 10px; color: white; background: #ffffff12; text-decoration: none; font-size: .9rem; transition: background .2s; }
+    .open:hover { background: #ffffff24; }
+    .empty { grid-column: 1 / -1; padding: 2rem; border: 1px dashed var(--line); border-radius: 18px; color: var(--muted); text-align: center; }
+    @media (max-width: 600px) { main { padding-top: 2rem; } .hero { display: block; } .badge { display: inline-block; margin-top: 1.2rem; } form { flex-direction: column; } button { width: 100%; } }
   </style>
 </head>
 <body>
-  <h1>File Recommendation System</h1>
-  <p>Search the files mounted in the application data directory.</p>
-  <form id="search"><input id="query" placeholder="e.g. deployment guide" required><button>Recommend</button></form>
-  <ul id="results"></ul>
+<main>
+  <header class="hero">
+    <div>
+      <div class="brand"><span class="logo">⌕</span> FileFind</div>
+      <h1>Find the file you need, faster.</h1>
+      <p class="subtitle">Search your selected folder with a simple, focused workspace that brings the right documents to the surface.</p>
+    </div>
+    <span class="badge">● Local &amp; private</span>
+  </header>
+  <p><a href="/history">View opened files</a></p>
+  <form id="search"><input id="query" placeholder="e.g. deployment guide" required><button>Search</button></form>
+  <section id="results" aria-live="polite"></section>
+</main>
   <script>
+    function createCard(result) {
+      const card = document.createElement("article");
+      card.className = "card";
+      const title = document.createElement("h2");
+      title.textContent = result.filename;
+      const path = document.createElement("div");
+      path.className = "path";
+      path.textContent = result.path;
+      const score = document.createElement("div");
+      score.className = "score";
+      score.textContent = `Similarity Score: ${(result.similarity_score * 100).toFixed(0)}%`;
+      const open = document.createElement("a");
+      open.className = "open";
+      open.href = `/api/file?path=${encodeURIComponent(result.path)}&q=${encodeURIComponent(document.querySelector("#query").value)}`;
+      open.target = "_blank";
+      open.rel = "noopener";
+      open.textContent = "Open";
+      card.append(title, path, score, open);
+      return card;
+    }
+
     document.querySelector("#search").addEventListener("submit", async (event) => {
       event.preventDefault();
+      const results = document.querySelector("#results");
+      results.replaceChildren();
       const response = await fetch(`/api/recommend?q=${encodeURIComponent(document.querySelector("#query").value)}`);
       const data = await response.json();
-      document.querySelector("#results").innerHTML = response.ok
-        ? data.results.map((r) => `<li><strong>${r.filename}</strong> (${r.path}) <span class="score">${(r.similarity_score * 100).toFixed(0)}%</span></li>`).join("") || "<li>No matches found.</li>"
-        : `<li>${data.error}</li>`;
+      if (!response.ok) {
+        results.className = "empty";
+        results.textContent = data.error;
+        return;
+      }
+      if (!data.results.length) {
+        results.className = "empty";
+        results.textContent = "No results found.";
+        return;
+      }
+      results.className = "";
+      data.results.forEach((result) => results.appendChild(createCard(result)));
     });
   </script>
 </body>

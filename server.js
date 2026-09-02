@@ -1,6 +1,7 @@
 const express = require("express");
 const fs = require("fs");
 const path = require("path");
+const { recordOpenedFile, getOpenedFiles } = require("./database");
 
 const app = express();
 const port = Number(process.env.PORT || 3000);
@@ -9,6 +10,10 @@ const version = process.env.APP_VERSION || "dev";
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
+
+app.get("/history", (_req, res) => {
+  res.sendFile(path.join(__dirname, "public", "history.html"));
+});
 
 function listFiles(directory) {
   if (!fs.existsSync(directory)) return [];
@@ -20,12 +25,21 @@ function listFiles(directory) {
   });
 }
 
+function resolveDataFile(relativePath) {
+  const resolvedPath = path.resolve(dataDir, relativePath);
+  const dataRoot = `${dataDir}${path.sep}`;
+  if (resolvedPath !== dataDir && !resolvedPath.startsWith(dataRoot)) return null;
+  if (!fs.existsSync(resolvedPath) || !fs.statSync(resolvedPath).isFile()) return null;
+  return resolvedPath;
+}
+
 function recommend(query, limit = 5) {
   const terms = query.toLowerCase().split(/\s+/).filter(Boolean);
   return listFiles(dataDir)
     .map((filePath) => {
       const filename = path.basename(filePath);
-      const text = `${filename} ${fs.readFileSync(filePath, "utf8")}`.toLowerCase();
+      const rawContent = fs.readFileSync(filePath, "utf8");
+      const text = `${filename} ${rawContent}`.toLowerCase();
       const matches = terms.filter((term) => text.includes(term)).length;
       return {
         filename,
@@ -46,6 +60,27 @@ app.get("/metrics", (_req, res) => {
   res.type("text/plain").send(`file_recommendation_files_indexed ${listFiles(dataDir).length}\n`);
 });
 
+app.get("/api/file", (req, res) => {
+  const relativePath = String(req.query.path || "");
+  const searchQuery = String(req.query.q || "");
+  const filePath = resolveDataFile(relativePath);
+  if (!filePath) return res.status(404).json({ error: "File not found" });
+  res.type(path.extname(filePath)).set("Content-Disposition", "inline").sendFile(filePath, (error) => {
+    if (error) return res.status(error.statusCode || 500).end();
+    recordOpenedFile(relativePath, searchQuery).catch((databaseError) => {
+      console.error("Failed to record opened file:", databaseError);
+    });
+  });
+});
+
+app.get("/api/history", async (req, res, next) => {
+  try {
+    res.json({ files: await getOpenedFiles(req.query.limit) });
+  } catch (error) {
+    next(error);
+  }
+});
+
 app.get("/api/recommend", (req, res) => {
   const query = String(req.query.q || "").trim();
   if (!query) return res.status(400).json({ error: "Query parameter q is required" });
@@ -58,4 +93,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { app, recommend, listFiles };
+module.exports = { app, recommend, listFiles, resolveDataFile };

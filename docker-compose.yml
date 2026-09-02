@@ -8,5 +8,6 @@ services:
       APP_VERSION: ${APP_VERSION:-local}
       DATA_DIR: /app/data
     volumes:
-      - ./sample-data:/app/data:ro
+      - ${HOST_DATA_DIR:-./sample-data}:/app/data:ro
+      - ${HOST_STORAGE_DIR:-./storage}:/app/storage
     restart: unless-stopped

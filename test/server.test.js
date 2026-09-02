@@ -9,6 +9,12 @@ test("returns matching files ordered by score", () => {
   assert.ok(results[0].similarity_score > 0);
 });
 
+test("resolves only files inside the data directory", () => {
+  const { resolveDataFile } = require("../server");
+  assert.ok(resolveDataFile("deployment.txt"));
+  assert.equal(resolveDataFile("../server.js"), null);
+});
+
 test("limits recommendations to twenty files", () => {
   assert.ok(recommend("ci", 100).length <= 20);
 });

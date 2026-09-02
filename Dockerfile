@@ -4,6 +4,7 @@ ENV NODE_ENV=production
 COPY package*.json ./
 RUN npm ci --omit=dev
 COPY server.js ./
+COPY database.js ./
 COPY public ./public
 COPY sample-data ./sample-data
 USER node
