@@ -21,7 +21,8 @@ jobs:
       - run: npm test
       - run: docker build --tag file-recommendation-system:${{ github.sha }} .
       - run: docker run --detach --name recommendation-ci --publish 3000:3000 file-recommendation-system:${{ github.sha }}
-      - run: curl --fail --retry 10 --retry-delay 3 --retry-connrefused http://localhost:3000/health      - if: always()
+      - run: curl --fail --retry 10 --retry-delay 3 --retry-connrefused http://localhost:3000/health
+      - if: always()
         run: docker logs recommendation-ci || true
       - if: always()
         run: docker rm --force recommendation-ci || true
