@@ -1,5 +1,7 @@
 services:
   file-recommendation:
+    build:
+      context: .
     image: ${IMAGE_NAME:-file-recommendation-system}:${APP_VERSION:-latest}
     ports:
       - "${HOST_PORT:-3000}:3000"
