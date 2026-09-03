@@ -23,6 +23,15 @@ Useful endpoints:
 
 Every successful **Open** action is stored in a SQLite database at `storage/file-recommendation.db`. Docker Compose persists it in the host `storage` folder. The record includes the filename, selected path, search query, and opening timestamp.
 
+## Login and roles
+
+The web interface requires login before searching or opening files. The default classroom accounts are:
+
+- Administrator: `admin` / `admin123`
+- User: `user` / `user123`
+
+Only the administrator can open `/history` and view all file-open records. For any shared or production deployment, set `ADMIN_USERNAME`, `ADMIN_PASSWORD`, `USER_USERNAME`, and `USER_PASSWORD` before starting the application. These values are used only when the accounts are first created in the SQLite database.
+
 ## Rubric walkthrough
 
 1. **Develop and push:** create a feature branch, make a change, commit it, push it, and open a pull request:

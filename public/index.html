@@ -42,7 +42,7 @@
     </div>
     <span class="badge">● Local &amp; private</span>
   </header>
-  <p><a href="/history">View opened files</a></p>
+  <p><a id="history-link" href="/history" hidden>View opened files (admin)</a> · <a id="logout" href="#" hidden>Log out</a> <a id="login-link" href="/login">Log in</a></p>
   <form id="search"><input id="query" placeholder="e.g. deployment guide" required><button>Search</button></form>
   <section id="results" aria-live="polite"></section>
 </main>
@@ -68,12 +68,28 @@
       return card;
     }
 
+    async function setupAuth() {
+      const response = await fetch("/api/me");
+      if (!response.ok) return;
+      const { user } = await response.json();
+      document.querySelector("#login-link").hidden = true;
+      document.querySelector("#logout").hidden = false;
+      document.querySelector("#logout").textContent = `Log out (${user.username})`;
+      document.querySelector("#history-link").hidden = user.role !== "admin";
+    }
+    document.querySelector("#logout").addEventListener("click", async (event) => {
+      event.preventDefault();
+      await fetch("/api/logout", { method: "POST" });
+      location.href = "/login";
+    });
+    setupAuth();
     document.querySelector("#search").addEventListener("submit", async (event) => {
       event.preventDefault();
       const results = document.querySelector("#results");
       results.replaceChildren();
       const response = await fetch(`/api/recommend?q=${encodeURIComponent(document.querySelector("#query").value)}`);
       const data = await response.json();
+      if (response.status === 401) { location.href = "/login"; return; }
       if (!response.ok) {
         results.className = "empty";
         results.textContent = data.error;

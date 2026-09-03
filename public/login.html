@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>FileFind — Login</title>
+  <style>
+    body { min-height: 100vh; display: grid; place-items: center; margin: 0; color: #edf4ff; background: #090f20; font: 16px system-ui, sans-serif; }
+    form { width: min(360px, calc(100% - 2rem)); padding: 2rem; border: 1px solid #9ab4e233; border-radius: 20px; background: #141f39; }
+    h1 { margin-top: 0; } label { display: block; margin-top: 1rem; color: #9caec8; } input, button { width: 100%; box-sizing: border-box; padding: .8rem; margin-top: .35rem; border: 0; border-radius: 10px; } button { margin-top: 1.3rem; color: white; background: #7c6cff; font-weight: 700; cursor: pointer; } #message { min-height: 1.5rem; color: #ff9caa; }
+  </style>
+</head>
+<body>
+  <form id="login">
+    <h1>FileFind login</h1>
+    <p>Sign in to search files. Only administrators can view opened-file history.</p>
+    <label>Username<input name="username" required autocomplete="username"></label>
+    <label>Password<input name="password" type="password" required autocomplete="current-password"></label>
+    <button>Sign in</button>
+    <p id="message"></p>
+  </form>
+  <script>
+    document.querySelector("#login").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const response = await fetch("/api/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(Object.fromEntries(new FormData(event.target))) });
+      const data = await response.json();
+      if (!response.ok) { document.querySelector("#message").textContent = data.error; return; }
+      location.href = data.user.role === "admin" ? "/" : "/";
+    });
+  </script>
+</body>
+</html>
